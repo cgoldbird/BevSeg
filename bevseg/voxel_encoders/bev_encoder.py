@@ -72,7 +72,8 @@ class BevFeatureEncoder(nn.Module):
         # get bev feature map
         bev_feats_map = torch.zeros(self.batch_size, self.grid_shape[0], self.grid_shape[1], voxel_feats.shape[-1], device=voxel_feats.device)
         bev_feats_map[voxel_coors[:, 0], voxel_coors[:, 1], voxel_coors[:, 2]] = voxel_feats
-        breakpoint()
+        bev_feats_map = bev_feats_map.permute(0, 3, 1, 2)
+        
         voxel_dict['bev_feats_map'] = bev_feats_map
         voxel_dict['voxel_feats'] = voxel_feats
         voxel_dict['voxel_coors'] = voxel_coors

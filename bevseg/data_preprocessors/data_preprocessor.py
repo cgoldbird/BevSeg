@@ -7,7 +7,7 @@ from mmdet3d.registry import MODELS
 from mmdet3d.structures.det3d_data_sample import SampleList
 from mmengine.model import BaseDataPreprocessor
 from torch import Tensor
-from .voxelize import VoxelizationByGridShape, dynamic_scatter_3d
+from .voxelize import dynamic_scatter_3d
 
 @MODELS.register_module()
 class VoxelPreprocessor(BaseDataPreprocessor):
@@ -15,11 +15,13 @@ class VoxelPreprocessor(BaseDataPreprocessor):
                  grid_shape: List[int],
                  point_cloud_range: List[float],
                  ignore_index: int,
-                 non_blocking: bool = False) -> None:
+                 non_blocking: bool = False,
+                 voxel_type: str = 'cubic') -> None:
         super(VoxelPreprocessor, self).__init__(non_blocking=non_blocking)
         self.grid_shape = grid_shape
         self.point_cloud_range = point_cloud_range
         self.ignore_index = ignore_index
+        self.voxel_type = voxel_type
     
     def forward(self, data: dict, training: bool = False) -> dict:
         data = self.cast_data(data)
@@ -29,20 +31,27 @@ class VoxelPreprocessor(BaseDataPreprocessor):
         
         assert 'points' in inputs, 'points must be in inputs'
         batch_inputs['points'] = inputs['points']
-        voxel_dict = self.voxel_group(batch_inputs['points'], data_samples)
+        voxel_dict = self.voxel_group(batch_inputs['points'], data_samples, self.voxel_type)
         batch_inputs['voxels'] = voxel_dict
         return {'inputs': batch_inputs, 'data_samples': data_samples}
     
     @torch.no_grad()
     def voxel_group(self, points: List[Tensor],
-                             data_samples: SampleList) -> dict:
+                    data_samples: SampleList,
+                    voxel_type: str) -> dict:
         voxel_dict = dict()
         
         coors = []
         voxels = []
         
         for i, res in enumerate(points):
-            xyz_res = res[:, :3]
+            if voxel_type == 'cubic':
+                xyz_res = res[:, :3]
+            elif voxel_type == 'cylindrical':
+                rho = torch.sqrt(res[:, 0]**2 + res[:, 1]**2)
+                phi = torch.atan2(res[:, 1], res[:, 0])
+                xyz_res = torch.stack((rho, phi, res[:, 2]), dim=-1)
+                
             max_bound = res.new_tensor(self.point_cloud_range[3:])
             min_bound = res.new_tensor(self.point_cloud_range[:3])
             crop_range = max_bound - min_bound
@@ -70,7 +79,10 @@ class VoxelPreprocessor(BaseDataPreprocessor):
             voxel_centers = (res_coors.float() + 0.5) * intervals + min_bound
             voxel_xyz_res = xyz_res - voxel_centers # relative coordinates of points to voxel centers
             res_coors = F.pad(res_coors, (1, 0), mode='constant', value=i) # voxel index of points (including batch index at first dim)
-            res_feas = torch.cat([xyz_res, voxel_xyz_res, res[:, 3:]], dim=-1) # features of points
+            if voxel_type == 'cubic':
+                res_feas = torch.cat([xyz_res, voxel_xyz_res, res[:, 3:]], dim=-1) # 7 features of points in cubic voxelization(xyz, relative xyz, intensity)
+            elif voxel_type == 'cylindrical':
+                res_feas = torch.cat([xyz_res, voxel_xyz_res, res[:, :2], res[:, 3:]], dim=-1) # 9 features of points in cylindrical voxelization(polar, relative polar, xy, intensity)
             coors.append(res_coors)
             voxels.append(res_feas)
             

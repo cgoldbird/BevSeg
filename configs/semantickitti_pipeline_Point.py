@@ -66,16 +66,16 @@ pipeline = [
             with_seg_3d=True,
             seg_3d_dtype='np.int32'),
         dict(type='PointSegClassMapping'),
-        dict(
-            type='RandomFlip3D',
-            sync_2d=False,
-            flip_ratio_bev_horizontal=0.5,
-            flip_ratio_bev_vertical=0.5),
-        dict(
-            type='GlobalRotScaleTrans',
-            rot_range=[-3.1415926, 3.1415926],
-            scale_ratio_range=[0.95, 1.05],
-            translation_std=[0.1, 0.1, 0.1]),
+        # dict(
+        #     type='RandomFlip3D',
+        #     sync_2d=False,
+        #     flip_ratio_bev_horizontal=0.5,
+        #     flip_ratio_bev_vertical=0.5),
+        # dict(
+        #     type='GlobalRotScaleTrans',
+        #     rot_range=[-3.1415926, 3.1415926],
+        #     scale_ratio_range=[0.95, 1.05],
+        #     translation_std=[0.1, 0.1, 0.1]),
         dict(type='Pack3DDetInputs', keys=['points', 'pts_semantic_mask'])
     ]
 
