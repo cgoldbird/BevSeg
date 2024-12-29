@@ -12,8 +12,7 @@ from mmdet3d.utils import ConfigType
 class BevFeatureEncoder(nn.Module):
     def __init__(self,
                  in_channels: int = 4,
-                 feat_channels: Sequence[int] = [],
-                 batch_size: int = 1,
+                 feat_channels: Sequence[int] = [64, 128, 256],
                  grid_shape: Sequence[int] = [480, 360, 32],
                  norm_cfg: ConfigType = dict(
                      type='BN1d', eps=1e-5, momentum=0.1),
@@ -23,7 +22,6 @@ class BevFeatureEncoder(nn.Module):
         assert len(feat_channels) > 0
         self.in_channels = in_channels
         self.grid_shape = grid_shape
-        self.batch_size = batch_size
         
         feat_channels = [self.in_channels] + list(feat_channels)
         if with_pre_norm:
@@ -50,6 +48,7 @@ class BevFeatureEncoder(nn.Module):
     def forward(self, voxel_dict: dict) -> dict:
         features = voxel_dict['voxels']
         coors = voxel_dict['coors'][:, :3] # only use batch, x, y
+        batch_size = coors[:, 0].max().item() + 1
 
         # 2D Voxels
         voxel_coors, inverse_map = torch.unique(
@@ -70,7 +69,7 @@ class BevFeatureEncoder(nn.Module):
             voxel_feats = self.compression_layers(voxel_feats)
         
         # get bev feature map
-        bev_feats_map = torch.zeros(self.batch_size, self.grid_shape[0], self.grid_shape[1], voxel_feats.shape[-1], device=voxel_feats.device)
+        bev_feats_map = torch.zeros(batch_size, self.grid_shape[0], self.grid_shape[1], voxel_feats.shape[-1], device=voxel_feats.device, dtype=voxel_feats.dtype)
         bev_feats_map[voxel_coors[:, 0], voxel_coors[:, 1], voxel_coors[:, 2]] = voxel_feats
         bev_feats_map = bev_feats_map.permute(0, 3, 1, 2)
         

@@ -74,6 +74,10 @@ class VoxelPreprocessor(BaseDataPreprocessor):
                     dtype=torch.long,
                     device=pts_semantic_mask.device) * self.ignore_index
                 seg_label[voxels_pos[:, 0], voxels_pos[:, 1], voxels_pos[:, 2]] = voxel_semantic_mask
+                # # 导出seg_label为文件
+                # seg_label = seg_label.cpu().numpy()
+                # np.save('seg_label.npy', seg_label)
+            
                 data_samples[i].gt_pts_seg.semantic_seg = seg_label
             
             voxel_centers = (res_coors.float() + 0.5) * intervals + min_bound
@@ -88,6 +92,7 @@ class VoxelPreprocessor(BaseDataPreprocessor):
             
         voxels = torch.cat(voxels, dim=0)
         coors = torch.cat(coors, dim=0)
+        coors = coors.to(torch.int64)
         voxel_dict['voxels'] = voxels
         voxel_dict['coors'] = coors
 

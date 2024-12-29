@@ -172,7 +172,7 @@ class down_CBR(nn.Module):
         x = self.conv(x)
         return x
 
-
+@MODELS.register_module()
 class Unet(BaseModule):
     def __init__(self, 
                  in_ch: int = 32,

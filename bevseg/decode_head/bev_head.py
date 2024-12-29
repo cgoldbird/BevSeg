@@ -74,17 +74,37 @@ class BevHead(Base3DDecodeHead):
         loss['loss_ce'] = self.loss_ce(
             seg_logit, seg_label, ignore_index=self.ignore_index)
         if self.loss_lovasz:
+            B, C, L, H, W = seg_logit.size()
+            seg_logit_t = seg_logit.contiguous().view(B, C, L, H*W)
+            B, C, H, W = seg_logit_t.size()
+            seg_logit_t = seg_logit_t.permute(0, 2, 3, 1).contiguous().view(-1, C)
+            seg_label_t = seg_label.view(-1)
             loss['loss_lovasz'] = self.loss_lovasz(
-                seg_logit, seg_label, ignore_index=self.ignore_index)
+                seg_logit_t, seg_label_t, ignore_index=self.ignore_index)
         return loss
     
     
-    def predict():
-        pass
+    def predict(self, voxel_dict: dict, batch_input_metas: List[dict],
+                test_cfg: ConfigType) -> List[Tensor]:
+        voxel_dict = self.forward(voxel_dict)
+        # torch.Size([2, 20, 480, 360, 32])
+        seg_logit = voxel_dict['seg_logit']
+        seg_preds = seg_logit.argmax(dim=1) # voxel-wise label
+        coors = voxel_dict['coors']
+        seg_preds = seg_preds[coors[:, 0], coors[:, 1], coors[:, 2], coors[:, 3]] # change to points label
+        seg_pred_list = []
+        for batch_idx in range(len(batch_input_metas)):
+            batch_mask = coors[:, 0] == batch_idx
+            seg_pred = seg_preds[batch_mask]
+            seg_pred_list.append(seg_pred)
+        return seg_pred_list
+        
+            
+        
 
 if __name__ == '__main__':
     bev_head = BevHead(channels=64, n_height=32, num_classes=20)
     voxel_dict = {'bev_feats_map': torch.randn(2, 64, 480, 360)}
     out_feats = bev_head(voxel_dict)
     print(out_feats['seg_logit'].shape)
-    # torch.Size([2, 20, 64, 480, 360])
+    # torch.Size([2, 20, 480, 360, 32])
