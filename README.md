@@ -7,13 +7,13 @@ This repository contains the implementation and integration of the **PolarNet** 
 ## Features
 - Seamless integration of PolarNet with MMDetection3D.
 - Support for data preprocessing, model training, evaluation, and inference.
-- Compatible with large-scale outdoor point cloud datasets (e.g., SemanticKITTI).
+- Compatible with large-scale outdoor point cloud datasets SemanticKITTI.
 
 ---
 
 ## Requirements
 Install MMDetection3D and its dependencies following the [official documentation](https://github.com/open-mmlab/mmdetection3d).
-
+Prepare SemanticKITTI DataSets follow MMDetection3D.
 ---
 
 ## Usage
@@ -23,4 +23,4 @@ Install MMDetection3D and its dependencies following the [official documentation
    cd PolarNet-MMDetection3D
 2. train
    ```bash
-   python train.py configs/
+   python train.py configs/bevseg_semantickitti_polar_stlr.py
