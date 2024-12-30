@@ -12,8 +12,8 @@ This repository contains the implementation and integration of the **PolarNet** 
 ---
 
 ## Requirements
-Install MMDetection3D and its dependencies following the [official documentation](https://github.com/open-mmlab/mmdetection3d).
-Prepare SemanticKITTI DataSets follow MMDetection3D.
+- Install MMDetection3D and its dependencies following the [official documentation](https://github.com/open-mmlab/mmdetection3d).
+- Prepare SemanticKITTI DataSets follow MMDetection3D.
 ---
 
 ## Usage
